@@ -120,6 +120,27 @@ if (productCount.count === 0) {
   // Networking
   insertProduct.run("SKU-018", "TP-Link Archer BE800", "Networking", 12, 4, 30, 45999.00, "Zone-D1", "R-18");
   insertProduct.run("SKU-019", "Ubiquiti Dream Machine", "Networking", 7, 3, 15, 38500.00, "Zone-D1", "R-19");
+
+  // Seed initial orders
+  const orderCount = db.prepare("SELECT COUNT(*) as count FROM orders").get() as { count: number };
+  if (orderCount.count === 0) {
+    const insertOrder = db.prepare("INSERT INTO orders (order_number, customer_name, status, total_amount) VALUES (?, ?, ?, ?)");
+    const insertOrderItem = db.prepare("INSERT INTO order_items (order_id, product_id, quantity, price_at_order) VALUES (?, ?, ?, ?)");
+    const insertTracking = db.prepare("INSERT INTO order_tracking (order_id, status, notes) VALUES (?, ?, ?)");
+
+    // Sample Order 1
+    const o1 = insertOrder.run("ORD-1001", "John Doe", "processing", 134900.00);
+    insertOrderItem.run(o1.lastInsertRowid, 2, 1, 134900.00); // iPhone
+    insertTracking.run(o1.lastInsertRowid, "pending", "Order created");
+    insertTracking.run(o1.lastInsertRowid, "processing", "Order is being packed");
+
+    // Sample Order 2
+    const o2 = insertOrder.run("ORD-1002", "Jane Smith", "shipped", 29990.00);
+    insertOrderItem.run(o2.lastInsertRowid, 3, 1, 29990.00); // Sony Headphones
+    insertTracking.run(o2.lastInsertRowid, "pending", "Order created");
+    insertTracking.run(o2.lastInsertRowid, "processing", "Order packed");
+    insertTracking.run(o2.lastInsertRowid, "shipped", "Order handed over to courier");
+  }
 }
 
 // Seed users if empty
