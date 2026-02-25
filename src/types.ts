@@ -16,10 +16,18 @@ export interface Order {
   id: number;
   order_number: string;
   customer_name: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
   total_amount: number;
   created_at: string;
   items?: string;
+}
+
+export interface OrderTracking {
+  id: number;
+  order_id: number;
+  status: string;
+  notes: string;
+  created_at: string;
 }
 
 export interface Transaction {

@@ -70,6 +70,15 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(product_id) REFERENCES products(id)
   );
+
+  CREATE TABLE IF NOT EXISTS order_tracking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
+    status TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(order_id) REFERENCES orders(id)
+  );
 `);
 
 // Seed initial data if empty
@@ -250,6 +259,7 @@ async function startServer() {
       }
 
       db.prepare("UPDATE orders SET total_amount = ? WHERE id = ?").run(total, orderId);
+      db.prepare("INSERT INTO order_tracking (order_id, status, notes) VALUES (?, 'pending', ?)").run(orderId, "Order created and pending fulfillment");
       return orderId;
     });
 
@@ -266,12 +276,23 @@ async function startServer() {
 
   app.patch("/api/orders/:id/status", (req, res) => {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, notes } = req.body;
     try {
       db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, id);
+      db.prepare("INSERT INTO order_tracking (order_id, status, notes) VALUES (?, ?, ?)").run(id, status, notes || `Status updated to ${status}`);
       const updatedOrder = db.prepare("SELECT * FROM orders WHERE id = ?").get(id);
       broadcast({ type: "ORDER_UPDATED", order: updatedOrder });
       res.json(updatedOrder);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/orders/:id/tracking", (req, res) => {
+    const { id } = req.params;
+    try {
+      const tracking = db.prepare("SELECT * FROM order_tracking WHERE order_id = ? ORDER BY created_at DESC").all(id);
+      res.json(tracking);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }

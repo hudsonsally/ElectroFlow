@@ -18,7 +18,10 @@ import {
   Code,
   MessageSquare,
   Send,
-  X
+  X,
+  Truck,
+  MapPin,
+  CheckCircle
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,7 +42,7 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
-import { Product, Order, DashboardStats, Transaction, User } from './types';
+import { Product, Order, OrderTracking, DashboardStats, Transaction, User } from './types';
 import { getInventoryInsights } from './services/geminiService';
 
 function cn(...inputs: ClassValue[]) {
@@ -223,7 +226,10 @@ export default function App() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isEditProductOpen, setIsEditProductOpen] = useState(false);
   const [isAdjustStockOpen, setIsAdjustStockOpen] = useState(false);
+  const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+  const [trackingHistory, setTrackingHistory] = useState<OrderTracking[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     sku: '', name: '', category: 'Smartphones', quantity: 0, min_threshold: 10, max_threshold: 100, unit_price: 0, location: '', rack_number: ''
@@ -329,9 +335,26 @@ export default function App() {
       });
       if (res.ok) {
         fetchData();
+        if (isTrackingOpen && selectedOrder?.id === orderId) {
+          handleTrackOrder(selectedOrder);
+        }
       }
     } catch (error) {
       console.error("Update order status error:", error);
+    }
+  };
+
+  const handleTrackOrder = async (order: Order) => {
+    setSelectedOrder(order);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/tracking`);
+      if (res.ok) {
+        const data = await res.json();
+        setTrackingHistory(data);
+        setIsTrackingOpen(true);
+      }
+    } catch (error) {
+      console.error("Track order error:", error);
     }
   };
 
@@ -863,8 +886,41 @@ export default function App() {
                   <p className="text-2xl font-bold text-slate-900">{orders.filter(o => o.status === 'processing').length}</p>
                 </div>
                 <div className="glass-panel p-6 border-l-4 border-l-emerald-500">
-                  <h4 className="text-sm font-medium text-slate-500 mb-1">Shipped Today</h4>
-                  <p className="text-2xl font-bold text-slate-900">{orders.filter(o => o.status === 'shipped').length}</p>
+                  <h4 className="text-sm font-medium text-slate-500 mb-1">Out for Delivery</h4>
+                  <p className="text-2xl font-bold text-slate-900">{orders.filter(o => o.status === 'out_for_delivery').length}</p>
+                </div>
+              </div>
+
+              {/* Order Lifecycle Diagram */}
+              <div className="glass-panel p-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-8 flex items-center gap-2">
+                  <RefreshCw size={20} className="text-indigo-600" />
+                  Standard Order Lifecycle
+                </h3>
+                <div className="relative flex justify-between items-center max-w-4xl mx-auto">
+                  {/* Background Line */}
+                  <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+                  
+                  {[
+                    { label: 'Pending', icon: <Package size={18} />, color: 'bg-slate-500' },
+                    { label: 'Processing', icon: <RefreshCw size={18} />, color: 'bg-amber-500' },
+                    { label: 'Shipped', icon: <Truck size={18} />, color: 'bg-blue-500' },
+                    { label: 'Out for Delivery', icon: <MapPin size={18} />, color: 'bg-indigo-500' },
+                    { label: 'Delivered', icon: <CheckCircle size={18} />, color: 'bg-emerald-500' }
+                  ].map((step, idx) => (
+                    <div key={idx} className="relative z-10 flex flex-col items-center gap-3">
+                      <div className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg",
+                        step.color
+                      )}>
+                        {step.icon}
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-bold text-slate-900 whitespace-nowrap">{step.label}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Step 0{idx + 1}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -896,6 +952,7 @@ export default function App() {
                                 order.status === 'pending' ? "bg-slate-100 text-slate-600" : 
                                 order.status === 'processing' ? "bg-amber-100 text-amber-700" : 
                                 order.status === 'shipped' ? "bg-blue-100 text-blue-700" : 
+                                order.status === 'out_for_delivery' ? "bg-indigo-100 text-indigo-700" :
                                 order.status === 'delivered' ? "bg-emerald-100 text-emerald-700" :
                                 "bg-rose-100 text-rose-700"
                               )}
@@ -903,15 +960,24 @@ export default function App() {
                               <option value="pending">Pending</option>
                               <option value="processing">Processing</option>
                               <option value="shipped">Shipped</option>
+                              <option value="out_for_delivery">Out for Delivery</option>
                               <option value="delivered">Delivered</option>
                               <option value="cancelled">Cancelled</option>
                             </select>
                           </td>
                           <td className="px-6 py-4 font-bold text-slate-900">₹{order.total_amount.toFixed(2)}</td>
                           <td className="px-6 py-4 text-right">
-                            <button className="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center gap-1 ml-auto">
-                              Details <ChevronRight size={14} />
-                            </button>
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleTrackOrder(order)}
+                                className="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center gap-1"
+                              >
+                                Track <MapPin size={14} />
+                              </button>
+                              <button className="text-slate-400 hover:text-slate-600 font-medium text-sm flex items-center gap-1">
+                                Details <ChevronRight size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1081,6 +1147,77 @@ export default function App() {
 
       {/* Modals */}
       <AnimatePresence>
+        {isTrackingOpen && selectedOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Order Tracking</h3>
+                  <p className="text-xs text-slate-500 mt-1">Order #{selectedOrder.order_number} • {selectedOrder.customer_name}</p>
+                </div>
+                <button onClick={() => setIsTrackingOpen(false)} className="text-slate-400 hover:text-slate-600">
+                  <Plus className="rotate-45" size={24} />
+                </button>
+              </div>
+              <div className="p-8 max-h-[60vh] overflow-y-auto">
+                <div className="relative space-y-8">
+                  {/* Vertical Line */}
+                  <div className="absolute top-2 bottom-2 left-4 w-0.5 bg-slate-100 z-0" />
+                  
+                  {trackingHistory.length > 0 ? (
+                    trackingHistory.map((event, idx) => (
+                      <div key={event.id} className="relative z-10 flex gap-6">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm border-4 border-white",
+                          idx === 0 ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-500"
+                        )}>
+                          {event.status === 'delivered' ? <CheckCircle size={14} /> : 
+                           event.status === 'shipped' ? <Truck size={14} /> : 
+                           event.status === 'out_for_delivery' ? <MapPin size={14} /> :
+                           <RefreshCw size={14} className={idx === 0 ? "animate-spin-slow" : ""} />}
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <div className="flex justify-between items-start">
+                            <p className={cn(
+                              "font-bold text-sm uppercase tracking-wider",
+                              idx === 0 ? "text-indigo-600" : "text-slate-600"
+                            )}>
+                              {event.status.replace(/_/g, ' ')}
+                            </p>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {new Date(event.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            {event.notes}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-slate-400 italic">No tracking history available yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button 
+                  onClick={() => setIsTrackingOpen(false)}
+                  className="px-6 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {isEditProductOpen && selectedProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
             <motion.div 
