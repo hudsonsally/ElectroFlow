@@ -21,7 +21,8 @@ import {
   X,
   Truck,
   MapPin,
-  CheckCircle
+  CheckCircle,
+  Map as MapIcon
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,6 +45,7 @@ import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
 import { Product, Order, OrderTracking, DashboardStats, Transaction, User } from './types';
 import { getInventoryInsights } from './services/geminiService';
+import { WarehouseMap } from './components/WarehouseMap';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -55,7 +57,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
   const [isLoginLoading, setIsLoginLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'orders' | 'database'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'orders' | 'database' | 'map'>('dashboard');
   const [dbData, setDbData] = useState<any>(null);
   const [isDbLoading, setIsDbLoading] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -491,6 +493,12 @@ export default function App() {
             label="Orders" 
             active={activeTab === 'orders'} 
             onClick={() => setActiveTab('orders')} 
+          />
+          <SidebarItem 
+            icon={<MapIcon size={20} />} 
+            label="Warehouse Map" 
+            active={activeTab === 'map'} 
+            onClick={() => setActiveTab('map')} 
           />
           {user.role === 'manager' && (
             <SidebarItem 
@@ -983,6 +991,54 @@ export default function App() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'map' && (
+            <motion.div 
+              key="map"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Interactive Warehouse Map</h2>
+                  <p className="text-sm text-slate-500">Real-time spatial visualization of stock levels and zone health</p>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-xs font-bold">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    LIVE SYNC ACTIVE
+                  </div>
+                </div>
+              </div>
+
+              <WarehouseMap inventory={inventory} />
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="glass-panel p-4">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Zone A</h4>
+                  <p className="text-sm font-bold text-slate-800">Computing & Mobile</p>
+                  <p className="text-xs text-slate-500 mt-1">Laptops, Smartphones</p>
+                </div>
+                <div className="glass-panel p-4">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Zone B</h4>
+                  <p className="text-sm font-bold text-slate-800">Audio & Gaming</p>
+                  <p className="text-xs text-slate-500 mt-1">Headphones, Consoles</p>
+                </div>
+                <div className="glass-panel p-4">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Zone C</h4>
+                  <p className="text-sm font-bold text-slate-800">Visual & Media</p>
+                  <p className="text-xs text-slate-500 mt-1">Monitors, Cameras</p>
+                </div>
+                <div className="glass-panel p-4">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Zone D</h4>
+                  <p className="text-sm font-bold text-slate-800">Infrastructure</p>
+                  <p className="text-xs text-slate-500 mt-1">Networking, Wearables</p>
                 </div>
               </div>
             </motion.div>
