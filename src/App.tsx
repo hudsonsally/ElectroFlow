@@ -45,7 +45,7 @@ import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
 import { Product, Order, OrderTracking, DashboardStats, Transaction, User } from './types';
 import { getInventoryInsights } from './services/geminiService';
-import { WarehouseMap } from './components/WarehouseMap';
+import { WarehouseMap3D } from './components/WarehouseMap3D';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -1006,18 +1006,18 @@ export default function App() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Interactive Warehouse Map</h2>
-                  <p className="text-sm text-slate-500">Real-time spatial visualization of stock levels and zone health</p>
+                  <h2 className="text-2xl font-bold text-slate-900">3D Digital Twin Map</h2>
+                  <p className="text-sm text-slate-500">Immersive spatial visualization of your electronics warehouse</p>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-xs font-bold">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    LIVE SYNC ACTIVE
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100 text-xs font-bold">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                    3D ENGINE ACTIVE
                   </div>
                 </div>
               </div>
 
-              <WarehouseMap inventory={inventory} />
+              <WarehouseMap3D inventory={inventory} />
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="glass-panel p-4">
