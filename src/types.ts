@@ -54,3 +54,12 @@ export interface User {
   role: 'manager' | 'staff';
   name: string;
 }
+
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}

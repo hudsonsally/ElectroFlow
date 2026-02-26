@@ -71,6 +71,24 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'ai', content: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio?.hasSelectedApiKey) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasApiKey(selected);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeyDialog = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      setHasApiKey(true);
+    }
+  };
 
   const [visualPreviews, setVisualPreviews] = useState<{id: string, url: string}[]>([]);
   const [isVisualLoading, setIsVisualLoading] = useState(false);
@@ -1543,9 +1561,19 @@ export default function App() {
                     <p className="text-[10px] text-indigo-100">Powered by Gemini</p>
                   </div>
                 </div>
-                <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {!hasApiKey && (
+                    <button 
+                      onClick={handleOpenKeyDialog}
+                      className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
+                    >
+                      Connect Key
+                    </button>
+                  )}
+                  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               {/* Chat Messages */}
