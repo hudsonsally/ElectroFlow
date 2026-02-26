@@ -6,6 +6,7 @@ import { Product } from '../types';
 
 interface WarehouseMap3DProps {
   inventory: Product[];
+  customZones?: any[];
 }
 
 const Rack = ({ 
@@ -82,15 +83,17 @@ const ZoneLabel = ({ name, position }: { name: string; position: [number, number
   </Text>
 );
 
-export const WarehouseMap3D: React.FC<WarehouseMap3DProps> = ({ inventory }) => {
+export const WarehouseMap3D: React.FC<WarehouseMap3DProps> = ({ inventory, customZones }) => {
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null);
 
-  const zones = [
+  const defaultZones = [
     { id: 'Zone-A', name: 'ZONE A: COMPUTING', categories: ['Laptops', 'Smartphones'], offset: [-6, 0, -4] },
     { id: 'Zone-B', name: 'ZONE B: ENTERTAINMENT', categories: ['Audio', 'Gaming'], offset: [6, 0, -4] },
     { id: 'Zone-C', name: 'ZONE C: VISUALS', categories: ['Monitors', 'Cameras'], offset: [-6, 0, 4] },
     { id: 'Zone-D', name: 'ZONE D: INFRASTRUCTURE', categories: ['Networking', 'Wearables'], offset: [6, 0, 4] },
   ];
+
+  const zones = customZones || defaultZones;
 
   return (
     <div className="relative w-full h-[600px] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">

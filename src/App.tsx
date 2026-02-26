@@ -93,6 +93,7 @@ export default function App() {
   const [visualPreviews, setVisualPreviews] = useState<{id: string, url: string}[]>([]);
   const [isVisualLoading, setIsVisualLoading] = useState(false);
   const [blueprintAnalysis, setBlueprintAnalysis] = useState<string | null>(null);
+  const [customMapZones, setCustomMapZones] = useState<any[] | null>(null);
   const [isBlueprintLoading, setIsBlueprintLoading] = useState(false);
 
   const handleBlueprintUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,8 +106,11 @@ export default function App() {
       reader.onloadend = async () => {
         const base64 = (reader.result as string).split(',')[1];
         const { analyzeWarehouseBlueprint } = await import('./services/geminiService');
-        const analysis = await analyzeWarehouseBlueprint(base64, file.type);
-        setBlueprintAnalysis(analysis);
+        const result = await analyzeWarehouseBlueprint(base64, file.type);
+        setBlueprintAnalysis(result.analysis);
+        if (result.zones && result.zones.length > 0) {
+          setCustomMapZones(result.zones);
+        }
         setIsBlueprintLoading(false);
       };
       reader.readAsDataURL(file);
@@ -1035,7 +1039,7 @@ export default function App() {
                 </div>
               </div>
 
-              <WarehouseMap3D inventory={inventory} />
+              <WarehouseMap3D inventory={inventory} customZones={customMapZones || undefined} />
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="glass-panel p-4">
