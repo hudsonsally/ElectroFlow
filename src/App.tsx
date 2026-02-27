@@ -553,16 +553,6 @@ export default function App() {
             <ArrowUpRight className="rotate-180" size={20} />
             <span className="font-medium">Sign Out</span>
           </button>
-
-          <button 
-            onClick={generateAiInsights}
-            disabled={isAiLoading}
-            className="w-full flex items-center gap-2 p-3 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors group"
-          >
-            <BrainCircuit size={20} className={cn(isAiLoading && "animate-pulse")} />
-            <span className="font-medium">AI Insights</span>
-            {isAiLoading && <RefreshCw size={14} className="ml-auto animate-spin" />}
-          </button>
         </div>
       </aside>
 
@@ -686,7 +676,7 @@ export default function App() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Chart */}
-                <div className="lg:col-span-2 glass-panel p-6">
+                <div className="lg:col-span-1 glass-panel p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-slate-800">Inventory Movement</h3>
                     <select className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none">
@@ -710,13 +700,24 @@ export default function App() {
                 </div>
 
                 {/* AI Insights Panel */}
-                <div className="glass-panel p-6 flex flex-col">
-                  <div className="flex items-center gap-2 mb-6">
-                    <BrainCircuit className="text-indigo-600" size={20} />
-                    <h3 className="font-bold text-slate-800">Smart Insights</h3>
+                <div className="lg:col-span-2 glass-panel p-6 flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <BrainCircuit className="text-indigo-600" size={20} />
+                      <h3 className="font-bold text-slate-800">Smart Insights</h3>
+                    </div>
+                    <button 
+                      onClick={generateAiInsights}
+                      disabled={isAiLoading}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200 disabled:opacity-50"
+                    >
+                      <BrainCircuit size={18} className={cn(isAiLoading && "animate-pulse")} />
+                      <span className="text-sm font-bold">Generate Insights</span>
+                      {isAiLoading && <RefreshCw size={14} className="animate-spin" />}
+                    </button>
                   </div>
                   
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {aiInsights.length > 0 ? (
                       aiInsights.map((insight, idx) => (
                         <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
@@ -738,11 +739,11 @@ export default function App() {
                         </div>
                       ))
                     ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                      <div className="col-span-full flex flex-col items-center justify-center text-center p-8">
                         <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                           <BrainCircuit className="text-slate-400" size={24} />
                         </div>
-                        <p className="text-sm text-slate-400">No insights yet. Click "AI Insights" to generate optimization tips.</p>
+                        <p className="text-sm text-slate-400">No insights yet. Click "Generate Insights" to get optimization tips.</p>
                       </div>
                     )}
                   </div>
