@@ -67,7 +67,13 @@ export async function chatWithInventory(message: string, dbContext: any) {
   try {
     const ai = getAI();
     const prompt = `You are ElectroFlow AI, a world-class electronics logistics and warehouse management expert. 
-    You have real-time access to the ElectroFlow inventory database.
+    
+    STYLE GUIDELINES:
+    - BE CONCISE. Avoid long-winded explanations unless specifically asked.
+    - Use tables, bullet points, and bold text to make information scannable.
+    - IMPORTANT: When using markdown tables, ensure you use proper syntax with newlines between rows.
+    - If providing a list of products or trends, use a table.
+    - Keep responses under 300 words unless the query requires deep analysis.
     
     CORE RESPONSIBILITIES:
     1. Provide precise stock levels, SKU details, and order statuses.
@@ -109,17 +115,23 @@ export async function chatWithInventory(message: string, dbContext: any) {
 }
 
 export async function analyzeWarehouseBlueprint(base64Image: string, mimeType: string) {
-  const ai = getAI();
-  const prompt = `Analyze this warehouse blueprint/floor plan. 
-  Identify the major storage zones, aisles, and any specific areas like loading docks or offices.
-  Provide a structured summary of the layout including:
-  1. List of detected Zones (e.g., Zone A, Zone B).
-  2. Estimated number of racks or shelving units.
-  3. A brief description of the flow (e.g., "Entrance is at the bottom, shipping on the right").
-  
-  Return the analysis in a professional, concise format.`;
-
   try {
+    const ai = getAI();
+    const prompt = `Analyze this warehouse blueprint/floor plan. 
+    Identify the major storage zones and their relative positions in a 30x30 grid (where center is 0,0).
+    Provide a structured JSON response with:
+    1. 'analysis': A text summary of the layout.
+    2. 'zones': An array of objects, each with:
+       - 'id': Unique string (e.g., 'Zone-A').
+       - 'name': Descriptive name.
+       - 'categories': Array of product categories to place here.
+       - 'offset': [x, y, z] coordinates for the 3D map (y is usually 0).
+    
+    Categories available: Laptops, Smartphones, Audio, Gaming, Monitors, Cameras, Networking, Wearables.
+    Distribute all categories across the detected zones.
+    
+    Return ONLY valid JSON.`;
+
     const response = await ai.models.generateContent({
       model: "gemini-flash-latest",
       contents: {
@@ -127,12 +139,35 @@ export async function analyzeWarehouseBlueprint(base64Image: string, mimeType: s
           { inlineData: { data: base64Image, mimeType } },
           { text: prompt }
         ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            analysis: { type: Type.STRING },
+            zones: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  name: { type: Type.STRING },
+                  categories: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  offset: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                },
+                required: ["id", "name", "categories", "offset"]
+              }
+            }
+          },
+          required: ["analysis", "zones"]
+        }
       }
     });
 
-    return response.text || "Analysis failed. Please try a clearer image.";
+    return JSON.parse(response.text || '{"analysis": "Failed to parse", "zones": []}');
   } catch (error) {
     console.error("Blueprint Analysis Error:", error);
-    return "Error analyzing blueprint. Ensure the file is a valid image.";
+    return { analysis: "Error analyzing blueprint.", zones: [] };
   }
 }

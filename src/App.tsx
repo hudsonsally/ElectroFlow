@@ -22,9 +22,12 @@ import {
   Truck,
   MapPin,
   CheckCircle,
-  Map as MapIcon
+  Map as MapIcon,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, 
@@ -68,6 +71,7 @@ export default function App() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'ai', content: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -106,7 +110,7 @@ export default function App() {
       reader.onloadend = async () => {
         const base64 = (reader.result as string).split(',')[1];
         const { analyzeWarehouseBlueprint } = await import('./services/geminiService');
-        const result = await analyzeWarehouseBlueprint(base64, file.type);
+        const result = await analyzeWarehouseBlueprint(base64, file.type) as any;
         setBlueprintAnalysis(result.analysis);
         if (result.zones && result.zones.length > 0) {
           setCustomMapZones(result.zones);
@@ -1166,7 +1170,7 @@ export default function App() {
                       AI Layout Analysis
                     </h4>
                     <div className="markdown-body text-sm text-slate-600">
-                      <Markdown>{blueprintAnalysis}</Markdown>
+                      <Markdown remarkPlugins={[remarkGfm]}>{blueprintAnalysis}</Markdown>
                     </div>
                     <button 
                       onClick={() => setBlueprintAnalysis(null)}
@@ -1549,14 +1553,20 @@ export default function App() {
       <div className="fixed bottom-6 right-6 z-50">
         <AnimatePresence>
           {isChatOpen && (
-            <motion.div
+            <motion.div 
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                width: isChatExpanded ? '600px' : '384px', // w-96 is 384px
+                height: isChatExpanded ? '700px' : '500px'
+              }}
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
-              className="mb-4 w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+              className="mb-4 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
             >
               {/* Chat Header */}
-              <div className="p-4 bg-indigo-600 text-white flex justify-between items-center">
+              <div className="p-4 bg-indigo-600 text-white flex justify-between items-center cursor-default">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                     <BrainCircuit size={18} />
@@ -1575,6 +1585,13 @@ export default function App() {
                       Connect Key
                     </button>
                   )}
+                  <button 
+                    onClick={() => setIsChatExpanded(!isChatExpanded)} 
+                    className="hover:bg-white/10 p-1 rounded-lg transition-colors"
+                    title={isChatExpanded ? "Shrink" : "Expand"}
+                  >
+                    {isChatExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                  </button>
                   <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
                     <X size={20} />
                   </button>
@@ -1604,7 +1621,7 @@ export default function App() {
                         : "bg-white text-slate-800 border border-slate-100 rounded-tl-none"
                     )}>
                       <div className="markdown-body">
-                        <Markdown>{msg.content}</Markdown>
+                        <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
                       </div>
                     </div>
                   </div>
